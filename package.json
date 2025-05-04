@@ -38,9 +38,6 @@
     "linux": {
       "target": "AppImage"
     },
-    "dmg":{
-      "attach": false
-    },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
