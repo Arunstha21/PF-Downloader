@@ -17,9 +17,10 @@
     "productName": "Google Drive Downloader",
     "files": [
       "dist-electron/**/*",
-      "next.config.js",
+      "out/**/*",
       "public/**/*",
-      "build/**/*"
+      "next.config.js",
+      ".env"
     ],
     "extraMetadata": {
       "main": "dist-electron/electron/main.mjs"
@@ -31,10 +32,14 @@
       "target": "nsis"
     },
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "arch": ["x64", "arm64"]
     },
     "linux": {
       "target": "AppImage"
+    },
+    "dmg":{
+      "attach": false
     },
     "nsis": {
       "oneClick": false,
@@ -44,6 +49,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "PF Downloader"
+    },
+    "publish": {
+      "provider": "github"
     }
   },
   "keywords": [],
