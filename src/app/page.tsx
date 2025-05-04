@@ -1,103 +1,204 @@
-import Image from "next/image";
+"use client"
+
+import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Progress } from "@/components/ui/progress"
+import FileUploader from "./components/file-uploader"
+import DownloadList from "./components/download-list"
+import LogViewer from "./components/log-viewer"
+import SettingsForm from "./components/settings-form"
+import { parseCSV, validateCSVData, convertCSVToDownloadTasks } from "../../lib/csv-parser"
+import GoogleSignIn from "./components/google-signin"
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [activeTab, setActiveTab] = useState("download")
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [isSignedIn, setIsSignedIn] = useState(false)
+  const [userInfo, setUserInfo] = useState<any>(null)
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+  useEffect(() => {
+    // Check if user is already signed in
+    const checkSignIn = async () => {
+      try {
+        const signedIn = await window.electron?.isSignedIn()
+        if (signedIn) {
+          const userInfo = await window.electron?.getUserInfo()
+          if (userInfo && userInfo.success) {
+            setUserInfo(userInfo.user)
+            setIsSignedIn(true)
+          }
+        }
+      } catch (err) {
+        console.error("Failed to check sign-in status:", err)
+      }
+    }
+
+    checkSignIn()
+  }, [isSignedIn])
+
+  const handleSignOut = async () => {
+    try {
+      await window.electron?.signOut()
+      setIsSignedIn(false)
+      setUserInfo(null)
+    } catch (err) {
+      console.error("Failed to sign out:", err)
+    }
+  }
+
+  const handleFileUpload = async (file: File) => {
+    setIsProcessing(true)
+    setProgress(0)
+    setError(null)
+    setSuccessMessage(null)
+
+    try {
+      // Start progress animation
+      const progressInterval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 95) {
+            clearInterval(progressInterval)
+            return prev
+          }
+          return prev + 5
+        })
+      }, 300)
+
+      // Parse the CSV file
+      const csvData = await parseCSV(file)
+
+      // Validate the CSV data
+      const validation = validateCSVData(csvData)
+      if (!validation.valid) {
+        throw new Error(`CSV validation failed: ${validation.errors.join(", ")}`)
+      }
+
+      // Convert CSV data to download tasks
+      const tasks = convertCSVToDownloadTasks(csvData)
+
+      // Process the download tasks via Electron
+      const result = await window.electron?.processCSV(tasks)
+
+      clearInterval(progressInterval)
+
+      if (result && result.success) {
+        setProgress(100)
+        setSuccessMessage("Files processed successfully!")
+      } else {
+        throw new Error(result?.error || "Failed to process CSV file")
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred")
+      setProgress(0)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleDownloadZip = async () => {
+    try {
+      const result = await window.electron?.downloadZip()
+      if (result && result.success) {
+        // Reset the UI after successful download
+        setSuccessMessage(null)
+        setActiveTab("download")
+      } else if (result && result.error) {
+        setError(result.error)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to download ZIP file")
+    }
+  }
+
+  if (!isSignedIn) {
+    return (
+      <main className="container mx-auto p-4 min-h-screen flex items-center justify-center">
+        <GoogleSignIn onSignedIn={() => setIsSignedIn(true)} />
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    )
+  }
+
+  return (
+    <main className="container mx-auto p-4 min-h-screen">
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardHeader>
+          <div>
+          <CardTitle className="text-2xl">Google Drive File Downloader</CardTitle>
+          <CardDescription>
+            Upload a CSV file with TeamName, ID_Proof, Bank_details, and Invoice columns to download files from Google
+            Drive
+          </CardDescription>
+          </div>
+          {userInfo && (
+            <div className="flex items-center space-x-2">
+              <div className="text-right">
+                <p className="text-sm font-medium">{userInfo.name}</p>
+                <p className="text-xs text-muted-foreground">{userInfo.email}</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleSignOut}>
+                Sign Out
+              </Button>
+            </div>
+          )}
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="download">Download</TabsTrigger>
+              <TabsTrigger value="logs">Logs</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="download" className="space-y-4 py-4">
+              {!isProcessing && !successMessage && (
+                <FileUploader onFileUpload={handleFileUpload} isProcessing={isProcessing} />
+              )}
+
+              {isProcessing && (
+                <div className="space-y-4 py-6">
+                  <p className="text-center text-sm text-muted-foreground">Processing your file...</p>
+                  <Progress value={progress} className="w-full" />
+                </div>
+              )}
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {successMessage && (
+                <div className="space-y-4">
+                  <Alert className="bg-green-50 border-green-200">
+                    <AlertTitle className="text-black">Success</AlertTitle>
+                    <AlertDescription>{successMessage}</AlertDescription>
+                  </Alert>
+                  <DownloadList />
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="logs">
+              <LogViewer />
+            </TabsContent>
+
+            <TabsContent value="settings">
+              <SettingsForm />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          <p className="text-xs text-muted-foreground">Google Drive File Downloader v1.0.0</p>
+          {successMessage && <Button onClick={handleDownloadZip}>Download All Files</Button>}
+        </CardFooter>
+      </Card>
+    </main>
+  )
 }
