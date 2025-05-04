@@ -30,9 +30,9 @@ jobs:
         run: npm run electron:build
 
       - name: Upload macOS artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: macOS Installer
+          name: macOS-Installer
           path: dist/*.dmg
 
   build-windows:
@@ -56,7 +56,7 @@ jobs:
         run: npm run electron:build
 
       - name: Upload Windows artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: Windows Installer
+          name: Windows-Installer
           path: dist/*.exe
