@@ -1,5 +1,3 @@
-
-```markdown
 # Google Drive Team Folder Downloader
 
 A desktop application built with **Next.js**, **Electron**, and **TypeScript** for downloading files from **Google Drive by file ID** directly into team folders. This tool supports CSV parsing, Google authentication, and displays real-time logs and download status.
@@ -162,5 +160,3 @@ Ensure you authorize this during sign-in for the app to fetch file content.
 - [Electron](https://www.electronjs.org/)
 - [ShadCN UI](https://ui.shadcn.com/)
 - [Google APIs Node.js Client](https://github.com/googleapis/google-api-nodejs-client)
-
-```
