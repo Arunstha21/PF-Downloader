@@ -50,9 +50,11 @@ let downloadStatus: DownloadStatus = {
   downloads: [],
 };
 
-const appServe = app.isPackaged ? serve({
+const isProd = app.isPackaged;
+const appServe = isProd ? serve({
   directory: path.join(__dirname, "../../build")
 }) : null;
+
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -65,25 +67,29 @@ function createWindow() {
     },
     icon: path.join(__dirname, "../public/icon.png"),
   });
+  
+  if (isProd) {
+    if (!appServe) {
+      logger.error("Failed to initialize appServe. Check build path or serve config.");
+      return;
+    }
 
-  if (app.isPackaged) {
-    appServe?.(mainWindow).then(() => {
+    appServe(mainWindow).then(() => {
       if (mainWindow) {
-        mainWindow.loadURL("app://-");
+        mainWindow.loadURL("app://-").catch(err => {
+          logger.error("Failed to load app://- URL:", err);
+        });
       }
+    }).catch(err => {
+      logger.error("Failed to serve app:", err);
     });
   } else {
     mainWindow.loadURL("http://localhost:3000");
     mainWindow.webContents.openDevTools();
     mainWindow.webContents.on("did-fail-load", (e, code, desc) => {
-      if (mainWindow) {
-        mainWindow.webContents.reloadIgnoringCache();
-      }
+      logger.error("Dev server load failed:", code, desc);
+      mainWindow?.webContents.reloadIgnoringCache();
     });
-  }
-
-  if (process.env.NODE_ENV === "development") {
-    mainWindow.webContents.openDevTools();
   }
 
   mainWindow.on("closed", () => {
