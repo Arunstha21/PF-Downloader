@@ -53,12 +53,16 @@ jobs:
         run: npm install
 
       - name: Create .env file
+        shell: pwsh
         run: |
-          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
-          echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
-          
+          "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" | Out-File -FilePath .env -Encoding utf8 -Append
+          "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" | Out-File -FilePath .env -Encoding utf8 -Append
+
       - name: Set GitHub token
-        run: echo "GH_TOKEN=${{ secrets.GH_TOKEN }}" >> $GITHUB_ENV
+        shell: pwsh
+        run: |
+          echo "GH_TOKEN=${{ secrets.GH_TOKEN }}" >> $env:GITHUB_ENV
+
       - name: Build Electron app (Windows)
         run: npm run electron:build
 
