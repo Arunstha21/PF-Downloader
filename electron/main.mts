@@ -67,7 +67,7 @@ function createWindow() {
     },
     icon: path.join(__dirname, "../public/icon.png"),
   });
-  
+
   if (isProd) {
     if (!appServe) {
       logger.error("Failed to initialize appServe. Check build path or serve config.");
@@ -340,3 +340,5 @@ ipcMain.handle('google-get-user-info', async () => {
     };
   }
 });
+
+

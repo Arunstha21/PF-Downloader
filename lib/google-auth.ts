@@ -16,7 +16,9 @@ const REDIRECT_URI = 'http://localhost:3001/oauth2callback';
 const SCOPES = [
   'https://www.googleapis.com/auth/userinfo.profile',
   'https://www.googleapis.com/auth/userinfo.email',
-  'https://www.googleapis.com/auth/drive.readonly'];
+  'https://www.googleapis.com/auth/drive.readonly',
+  'https://www.googleapis.com/auth/drive.file',
+    ];
 
 // Token storage path
 const TOKEN_PATH = path.join(app.getPath('userData'), 'google-token.json');
