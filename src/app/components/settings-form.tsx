@@ -15,6 +15,7 @@ interface Settings {
   downloadPath: string
   autoDeleteZip: boolean
   logLevel: string
+  uploadLink: string
 }
 
 export default function SettingsForm() {
@@ -22,6 +23,7 @@ export default function SettingsForm() {
     downloadPath: "",
     autoDeleteZip: true,
     logLevel: "info",
+    uploadLink: '',
   })
   const [isSaved, setIsSaved] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -102,7 +104,19 @@ export default function SettingsForm() {
             </div>
             <p className="text-sm text-muted-foreground">Choose where downloaded files will be saved</p>
           </div>
-
+          <div className="space-y-2">
+            <Label htmlFor="uploadLink">Upload File Location</Label>
+            <div className="flex space-x-2">
+              <Input
+                id="uploadLink"
+                value={settings.uploadLink}
+                placeholder="https://drive.google.com/drive/folders/your-folder-id"
+                onChange={(e) => handleChange("uploadLink", e.target.value)}
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">Google Drive Folder Link for upload of files.</p>
+          </div>
+          <Separator />
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="autoDeleteZip">Auto-delete ZIP after download</Label>

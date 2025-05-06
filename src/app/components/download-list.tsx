@@ -1,14 +1,17 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { Folder, FileText, Check, AlertCircle } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
 
 interface DownloadFile {
   id: string
+  path: string
   name: string
   status: "completed" | "error" | "pending"
   error?: string
@@ -16,14 +19,16 @@ interface DownloadFile {
 
 interface DownloadFolder {
   id: string
+  path: string
   folderName: string
   files: DownloadFile[]
 }
 
-export default function DownloadList() {
+export default function DownloadList({setError, setOverallProgress}: {setError: (error: string | null) => void , setOverallProgress: (percent: number) => void}) {
   const [downloads, setDownloads] = useState<DownloadFolder[]>([])
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({})
   const [isLoading, setIsLoading] = useState(true)
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
 
   const toggleFolder = (folderId: string) => {
     setExpandedFolders((prev) => ({
@@ -31,6 +36,49 @@ export default function DownloadList() {
       [folderId]: !prev[folderId],
     }))
   }
+
+  useEffect(() => {
+    const handleProgress = (event: any, progress: any) => {   
+      const percent = progress.percent || 
+        (progress.totalBytes ? Math.round((progress.bytesUploaded / progress.totalBytes) * 100) : 0);
+        const filePath = encodeURI(progress.filePath);
+      if (progress.type === 'file-progress') {
+        setUploadProgress((prev) => ({
+          ...prev,
+          [filePath]: percent,
+        }));
+      } 
+      else if (progress.type === 'folder-progress') {
+        setUploadProgress((prev) => ({
+          ...prev,
+          [filePath]: percent,
+        }));
+      }
+      else if (progress.type === 'overall-progress') {
+        setOverallProgress(percent);
+      }
+      else if (progress.type === 'file-complete' || progress.type === 'folder-complete') {
+        setUploadProgress((prev) => ({
+          ...prev,
+          [filePath]: 100,
+        }));
+      }
+    };
+  
+    if (window.electron?.on) {
+      window.electron.on('overall-upload-progress', handleProgress);
+      window.electron.on('upload-progress', handleProgress);
+      window.electron.on('upload-complete', handleProgress);
+    }
+  
+    return () => {
+      if (window.electron?.off) {
+        window.electron.off('overall-upload-progress', handleProgress);
+        window.electron.off('upload-progress', handleProgress);
+        window.electron.off('upload-complete', handleProgress);
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const fetchDownloads = async () => {
@@ -41,7 +89,6 @@ export default function DownloadList() {
 
         if (result && result.downloads) {
           setDownloads(result.downloads)
-
           // Expand all folders by default
           const expanded: Record<string, boolean> = {}
           result.downloads.forEach((folder: DownloadFolder) => {
@@ -60,6 +107,24 @@ export default function DownloadList() {
 
     fetchDownloads()
   }, [])
+
+  const handleUpload = async (path: string) => {
+    setError(null)
+    setOverallProgress(0)
+    try {
+      const result = await window.electron?.uploadPathToDrive(path)
+      if (result && result.success) {
+        console.log("Upload successful")
+      } else {
+        setError(result.error)
+        console.error("Upload failed:", result.error)
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to upload")
+      console.error("Failed to upload folder:", error)
+    }
+  }
+  
 
   if (isLoading) {
     return (
@@ -92,13 +157,39 @@ export default function DownloadList() {
                 className="flex items-center justify-between cursor-pointer hover:bg-muted p-2 rounded-md"
                 onClick={() => toggleFolder(folder.id)}
               >
+                <div>
                 <div className="flex items-center space-x-2">
                   <Folder className="h-5 w-5 text-primary" />
                   <span className="font-medium">{folder.folderName}</span>
                 </div>
+                {uploadProgress[encodeURI(folder.path)] !== undefined && uploadProgress[encodeURI(folder.path)] < 100 && (
+                    <div className="w-full mt-2">
+                      <Progress value={uploadProgress[encodeURI(folder.path)]} />
+                      <span className="text-xs text-muted-foreground mt-1 block">
+                        Uploading... {uploadProgress[encodeURI(folder.path)]}%
+                      </span>
+                    </div>
+                  )}
+                  {uploadProgress[encodeURI(folder.path)] === 100 && (
+                    <div className="text-xs text-green-500 mt-1 block">
+                      Upload complete!
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  
                 <Badge variant="outline">
                   {folder.files.filter((f) => f.status === "completed").length}/{folder.files.length} files
                 </Badge>
+                {folder.files.filter((f) => f.status === "completed").length > 0 && (
+                  <Button variant="outline" size="sm" className="ml-2" onClick={(e) => {
+                    e.stopPropagation();
+                    handleUpload(folder.path);
+                  }}>
+                   Upload
+                  </Button>
+                )}
+                </div>
               </div> 
               {expandedFolders[folder.id] && (
               <div className="ml-6 space-y-2">
@@ -112,6 +203,7 @@ export default function DownloadList() {
                               <FileText className="h-4 w-4 text-muted-foreground" />
                               <span className="text-sm text-red-500">{file.name}</span>
                             </div>
+
                             <AlertCircle className="h-4 w-4 text-red-500" />
                           </div>
                         </TooltipTrigger>
@@ -121,12 +213,32 @@ export default function DownloadList() {
                       </Tooltip>
                     ) : (
                       <div key={file.id} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md">
+                        <div>
                         <div className="flex items-center space-x-2">
                           <FileText className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{file.name}</span>
+                          <span className="text-sm">{file.name} - {file.id}</span>
+                        </div>
+                        {uploadProgress[encodeURI(file.path)] !== undefined && uploadProgress[encodeURI(file.path)] < 100 && (
+                          <div className="w-full mt-2">
+                            <Progress value={uploadProgress[encodeURI(file.path)]} />
+                            <span className="text-xs text-muted-foreground mt-1 block">
+                              Uploading... {uploadProgress[encodeURI(file.path)]}%
+                            </span>
+                          </div>
+                        )}
+                        {uploadProgress[encodeURI(file.path)] === 100 && (
+                          <div className="text-xs text-green-500 mt-1 block">
+                            Upload complete!
+                          </div>
+                        )}
                         </div>
                         {file.status === "completed" ? (
+                          <div className="flex items-center space-x-2">
                           <Check className="h-4 w-4 text-green-500" />
+                          <Button variant="outline" size="sm" className="ml-2" onClick={() => handleUpload(file.path)}>
+                          Upload
+                         </Button>
+                         </div>
                         ) : (
                           <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/25 border-t-primary animate-spin" />
                         )}

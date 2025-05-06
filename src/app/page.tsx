@@ -21,6 +21,25 @@ export default function Home() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [isSignedIn, setIsSignedIn] = useState(false)
   const [userInfo, setUserInfo] = useState<any>(null)
+  const [downloadPath, setDownloadPath] = useState<string>('')
+  const [isUploading, setIsUploading] = useState(false)
+  const [overallProgress, setOverallProgress] = useState<number | null>(null)
+
+    useEffect(() => {
+      const loadSettings = async () => {
+        try {
+          const savedSettings = await window.electron?.getSettings()
+          if (savedSettings) {
+            setDownloadPath(savedSettings.downloadPath)
+          }
+        } catch (err) {
+          setError("Failed to load settings")
+          console.error(err)
+        }
+      }
+  
+      loadSettings()
+    }, [])
 
   useEffect(() => {
     // Check if user is already signed in
@@ -116,6 +135,20 @@ export default function Home() {
     }
   }
 
+  const handleUploadAll = async () => {
+    setError(null)
+    setIsUploading(true)
+    setOverallProgress(0)
+    const result = await window.electron?.uploadPathToDrive(downloadPath)
+    if (result && result.success) {
+      setIsUploading(false)
+      setOverallProgress(100)
+      setSuccessMessage("All files uploaded successfully!")
+    } else if (result && result.error) {
+      setError(result.error)
+    }
+  }
+
   if (!isSignedIn) {
     return (
       <main className="container mx-auto p-4 min-h-screen flex items-center justify-center">
@@ -172,6 +205,15 @@ export default function Home() {
                   <AlertTitle>Error</AlertTitle>
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
+              )}              
+              
+              {typeof overallProgress === 'number' && overallProgress >= 0 && (
+                <div className="space-y-4 text-center text-sm text-muted-foreground">
+                    <Progress value={overallProgress} className="w-full h-4" />
+                    <div className="text-sm text-muted-foreground">
+                      {overallProgress === 100 ? "Upload complete!" : `Uploading files... (${overallProgress}%)`}
+                    </div>
+                </div>
               )}
 
               {successMessage && (
@@ -180,7 +222,7 @@ export default function Home() {
                     <AlertTitle className="text-black">Success</AlertTitle>
                     <AlertDescription>{successMessage}</AlertDescription>
                   </Alert>
-                  <DownloadList />
+                  <DownloadList setError={setError} setOverallProgress={setOverallProgress}/>
                 </div>
               )}
             </TabsContent>
@@ -196,7 +238,12 @@ export default function Home() {
         </CardContent>
         <CardFooter className="flex justify-between">
           <p className="text-xs text-muted-foreground">Google Drive File Downloader v1.0.0</p>
-          {successMessage && <Button onClick={handleDownloadZip}>Download All Files</Button>}
+          {successMessage && 
+          <div className="flex space-x-2">
+          <Button onClick={handleUploadAll} disabled={isUploading}>{isUploading? "Uploading...":'Upload All Files'}</Button>
+          <Button onClick={handleDownloadZip}>Download All Files</Button>
+          </div>
+          }
         </CardFooter>
       </Card>
     </main>

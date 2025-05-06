@@ -3,7 +3,7 @@ import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import fs from "fs-extra";
 import Store from "electron-store";
-import { downloadFilesFromGoogleDrive, createZipArchive } from "../lib/google-drive.js";
+import { downloadFilesFromGoogleDrive, createZipArchive, uploadToDrive, getDriveFolderInfo } from "../lib/google-drive.js";
 import { logger, createSessionLogger, getDynamicLogsPath } from "../lib/logger.js";
 import { getAuthClient, signOut, isSignedIn, getUserInfo } from "../lib/google-auth.js";
 import { fileURLToPath } from 'url';
@@ -22,9 +22,11 @@ interface DownloadStatus {
   inProgress: boolean;
   downloads: {
     id: string;
+    path: string;
     folderName: string;
     files: {
       id: string;
+      path: string;
       name: string;
       status: "pending" | "completed" | "error";
       error?: string;
@@ -37,6 +39,7 @@ const store = new Store({
   defaults: {
     downloadPath: path.join(app.getPath("downloads"), "GoogleDriveFiles"),
     autoDeleteZip: true,
+    uploadLink: "",
     logLevel: "info",
   },
 });
@@ -133,6 +136,7 @@ ipcMain.handle("get-settings", () => {
   return {
     downloadPath: store.get("downloadPath"),
     autoDeleteZip: store.get("autoDeleteZip"),
+    uploadLink: store.get("uploadLink"),
     logLevel: store.get("logLevel"),
   };
 });
@@ -152,9 +156,11 @@ ipcMain.handle('process-csv', async (_event: IpcMainInvokeEvent, tasks: Task[]) 
       inProgress: true,
       downloads: tasks.map(task => ({
         id: uuidv4(),
+        path: path.join(downloadPath, task.folderName),
         folderName: task.folderName,
         files: task.fileIds.map(([fileId, fileName]) => ({
           id: uuidv4(),
+          path: path.join(downloadPath, task.folderName, fileName),
           name: `${fileName}${fileId ? '' : ' (Missing ID)'}`,
           status: fileId ? 'pending' : 'error',
           error: fileId ? undefined : 'Missing file ID'
@@ -162,19 +168,19 @@ ipcMain.handle('process-csv', async (_event: IpcMainInvokeEvent, tasks: Task[]) 
       }))
     };
 
-    // Process the download tasks - note we're not passing credentialsPath anymore
     const result = await downloadFilesFromGoogleDrive(
       tasks,
       downloadPath,
       sessionId,
       (progress) => {
         if (progress.type === "file-complete") {
-          const { folderName, fileName, success, error } = progress;
+          const { folderName, fileName, success, error, path } = progress;
           const folder = downloadStatus.downloads.find((d) => d.folderName === folderName);
           if (folder) {
             const file = folder.files.find((f) => f.name.startsWith(fileName));
             if (file) {
               file.status = success ? "completed" : "error";
+              file.path = path;
               if (error) file.error = error;
             }
           }
@@ -341,4 +347,61 @@ ipcMain.handle('google-get-user-info', async () => {
   }
 });
 
+ipcMain.handle("upload-path-to-drive", async (_event, localPath: string) => {
+  try {
+    const uploadLink = store.get("uploadLink") as string;
+    if (!uploadLink || uploadLink.trim() === "") {
+      logger.error("No upload link found in settings.");
+      return { success: false, error: "No upload link found in settings." };
+    }
+    const parentFolderId = extractGoogleDriveFolderId(uploadLink);
+    if (!parentFolderId) {
+      logger.error("Invalid Google Drive folder link.");
+      return { success: false, error: "Invalid Google Drive folder link." };
+    }
+    const result = await uploadToDrive(localPath, parentFolderId, (progress) => {
+      if (!mainWindow) return;
+      if (progress.type === 'file-progress') {
+        mainWindow.webContents.send('upload-progress', progress)
+      } else if (progress.type === 'file-complete') {
+        mainWindow.webContents.send('upload-complete', progress)
+      }else if(progress.type === 'overall-progress') {
+        mainWindow.webContents.send('overall-upload-progress', progress)
+      }
+    })
+    logger.info(`Upload completed: ${result.toString()}`);
+    return { success: true, result }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+})
 
+function extractGoogleDriveFolderId(url: string): string | null {
+  const folderMatch = url.match(/\/folders\/([^/?]+)/);
+  if (folderMatch && folderMatch[1]) {
+    return folderMatch[1];
+  }
+  return null;
+}
+
+ipcMain.handle("get-drive-folder-info", async (_event) => {
+  try {
+    const uploadLink = store.get("uploadLink") as string;
+    if (!uploadLink || uploadLink.trim() === "") {
+      logger.error("No upload link found in settings.");
+      return { success: false, error: "No upload link found in settings." };
+    }
+    const folderId = extractGoogleDriveFolderId(uploadLink);
+    if (!folderId) {
+      logger.error("Invalid Google Drive folder link.");
+      return { success: false, error: "Invalid Google Drive folder link." };
+    }
+    const folderInfo = await getDriveFolderInfo(folderId);
+    return { success: true, folderInfo };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : String(error) 
+    };
+  }
+});

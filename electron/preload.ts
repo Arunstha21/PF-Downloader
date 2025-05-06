@@ -11,6 +11,16 @@ contextBridge.exposeInMainWorld("electron", {
   getDownloadStatus: () => ipcRenderer.invoke("get-download-status"),
   clearLogs: () => ipcRenderer.invoke("clear-logs"),
   getDownloadPath: () => ipcRenderer.invoke("get-settings").then((s: any) => s.downloadPath),
+  uploadPathToDrive: (path: string) => ipcRenderer.invoke("upload-path-to-drive", path),
+
+  on: (channel: string, listener: (event: any, ...args: any[]) => void) => {
+    ipcRenderer.on(channel, listener)
+  },
+
+  // optional: to remove listeners if needed
+  off: (channel: string, listener: (...args: any[]) => void) => {
+    ipcRenderer.removeListener(channel, listener)
+  },
 
   signIn: () => ipcRenderer.invoke("google-sign-in"),
   signOut: () => ipcRenderer.invoke("google-sign-out"),

@@ -15,6 +15,11 @@ interface ElectronAPI {
   signOut: () => Promise<any>;
   isSignedIn: () => Promise<any>;
   getUserInfo: () => Promise<any>;
+
+  on: (channel: string, listener: (event: any, ...args: any[]) => void) => void;
+  off: (channel: string, listener: (...args: any[]) => void) => void;
+
+  uploadPathToDrive: (path: string) => Promise<any>;
 }
 
 declare global {

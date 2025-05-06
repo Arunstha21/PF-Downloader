@@ -53,13 +53,9 @@ jobs:
         run: npm install
 
       - name: Create .env file
-        shell: pwsh
-        env:
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: |
-          "GOOGLE_CLIENT_ID=$env:GOOGLE_CLIENT_ID" | Out-File -FilePath .env -Encoding utf8 -Append
-          "GOOGLE_CLIENT_SECRET=$env:GOOGLE_CLIENT_SECRET" | Out-File -FilePath .env -Encoding utf8 -Append
+          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
+          echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
 
       - name: Set GitHub token
         shell: pwsh

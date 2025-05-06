@@ -19,8 +19,6 @@ export default function LogViewer() {
     setIsLoading(true)
     try {
       const result = await window.electron?.getLogs()
-      console.log("Fetched logs:", result);
-      
       if (result && result.logs) {
         setLogs(result.logs)
       } else {
