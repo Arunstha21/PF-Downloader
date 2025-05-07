@@ -1,3 +1,4 @@
+import '../lib/load-env.js'
 import { app, BrowserWindow, ipcMain, dialog, IpcMainInvokeEvent } from "electron";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";

@@ -8,14 +8,9 @@ import http from 'http';
 import { URL } from 'url';
 import { logger } from './logger';
 
-const env = JSON.parse(fs.readFileSync('dist-electron/env.json', 'utf-8'));
-
 // OAuth 2.0 client ID information
-const CLIENT_ID = env.GOOGLE_CLIENT_ID || '';
-const CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET || '';
-
-logger.info('Google Client ID:', CLIENT_ID);
-logger.info('Google Client Secret:', CLIENT_SECRET);
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 
 const REDIRECT_URI = 'http://localhost:3001/oauth2callback';
 const SCOPES = [

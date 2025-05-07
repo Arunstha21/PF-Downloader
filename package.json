@@ -15,14 +15,17 @@
   "main": "dist-electron/electron/main.mjs",
   "build": {
     "appId": "com.dot.googledrive-downloader",
-    "productName": "Google Drive Downloader",
+    "productName": "PF Downloader",
     "files": [
       "dist-electron/**/*",
       "build/**/*",
       "public/**/*",
-      "next.config.js",
-      ".env"
+      "next.config.js"
     ],
+    "extraResources":[{
+      "from": ".env",
+      "to": ".env"
+    }],
     "extraMetadata": {
       "main": "dist-electron/electron/main.mjs"
     },
