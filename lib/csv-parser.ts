@@ -1,7 +1,3 @@
-/**
- * CSV Parser utility for processing uploaded CSV files
- */
-
 interface CSVRow {
   TeamName: string
   ID_Proof: string

@@ -1,7 +1,3 @@
-/**
- * Utility to determine file extension from MIME type
- */
-
 export function getFileType(mimeType: string): string {
   const mimeTypesToExtensions: Record<string, string> = {
     // Common text formats
