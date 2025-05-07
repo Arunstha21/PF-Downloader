@@ -1,4 +1,4 @@
-const fs = require('fs');
+import fs from 'fs';
 require('dotenv').config();
 
 const envData = {
