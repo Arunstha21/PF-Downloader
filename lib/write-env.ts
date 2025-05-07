@@ -1,5 +1,6 @@
 import fs from 'fs';
-require('dotenv').config();
+import dotenv from 'dotenv';
+dotenv.config();
 
 const envData = {
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
