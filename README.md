@@ -1,45 +1,54 @@
 # Google Drive Team Folder Downloader
 
-A desktop application built with **Next.js**, **Electron**, and **TypeScript** for downloading files from **Google Drive by file ID** directly into team folders. This tool supports CSV parsing, Google authentication, and displays real-time logs and download status.
+A cross-platform desktop app built with **Next.js**, **Electron**, and **TypeScript** that lets you download files from **Google Drive** using a CSV of file links and automatically organize them into team folders. It also supports zipping downloads and uploading them back to Drive.
 
 ---
 
-## 🧩 Features
+## ✨ Features
 
-- ✅ Google Sign-In using OAuth2
-- 📁 File and folder picker using Electron
-- 📄 CSV-based batch file download
-- 💾 Save and load custom settings
-- 📥 Download files by Google Drive file ID into team-specific folders
-- 📊 Real-time progress and log viewer
-- 🌐 Cross-platform support: Windows, macOS, Linux
-- 🎨 Beautiful UI built with Tailwind CSS and ShadCN components
-
----
-
-## 📦 Tech Stack
-
-| Layer         | Technology                   |
-|---------------|------------------------------|
-| UI            | React, Tailwind CSS, ShadCN  |
-| App Framework | Next.js (App Router)         |
-| Desktop App   | Electron                     |
-| Auth/Storage  | Google Drive API, OAuth2     |
-| Language      | TypeScript                   |
-| Build Tools   | Electron Builder, ESLint     |
+- ✅ Google OAuth2 Sign-In
+- 📄 CSV-based batch download
+- 📂 Auto-sorted team folders
+- 🗂 Upload to Google Drive after download
+- 💾 Download all as ZIP
+- 📊 Real-time progress and logs
+- 🌐 Cross-platform support: **macOS**, **Windows**, **Linux**
+- 🎨 Built with **ShadCN**, **Tailwind CSS**
 
 ---
 
-## 🔧 Installation
+## 🚀 Demo
 
-1. **Clone the repository:**
+> Upload a CSV like:
+
+```csv
+TeamName,ID_Proof,Bank_details,Invoice
+Team Alpha,https://drive.google.com/file/d/ID1/view,https://drive.google.com/file/d/ID2/view,https://drive.google.com/file/d/ID3/view
+Team Beta,https://...,https://...,https://...
+```
+
+The app downloads each file and organizes them into folders like:
+
+```
+/Downloads/GoogleDriveFiles/
+├── Team Alpha/
+│   ├── ID_Proof.pdf
+│   ├── Bank_details.pdf
+│   └── Invoice.pdf
+```
+
+---
+
+## 🛠 Installation
+
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/arunstha21/pf-downloader.git
 cd pf-downloader
 ```
 
-2. **Install dependencies:**
+### 2. Install dependencies
 
 ```bash
 npm install
@@ -47,33 +56,69 @@ npm install
 yarn install
 ```
 
-3. **Run in development (Electron + Next.js):**
+### 3. Setup `.env` (only for Electron OAuth2)
+
+```env
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+```
+
+### 4. Run in development
 
 ```bash
 npm run electron:dev
 ```
 
-4. **Build the app for production:**
+### 5. Build for production
 
 ```bash
 npm run electron:build
 ```
 
+This builds the Next.js app and packages the Electron app into:
+- `.dmg` (macOS)
+- `.exe` (Windows)
+- `.AppImage` (Linux)
+
 ---
 
-## 🚀 Usage
+## ⚙️ Google API Setup
 
-### 1. Sign In with Google
-- Use the **Google Sign-In** button to authenticate with your Google Drive account.
+1. Go to [Google Cloud Console](https://console.cloud.google.com/).
+2. Create a project and enable **Google Drive API** + **OAuth2.0**.
+3. Add `http://localhost:3001/oauth2callback` to redirect URIs.
+4. Create OAuth2 credentials and copy:
+   - `GOOGLE_CLIENT_ID`
+   - `GOOGLE_CLIENT_SECRET`
 
-### 2. Upload CSV
-- Upload a CSV file containing `fileId, teamName` pairs. The app will fetch and download these files accordingly.
+5. Add them to `.env` and/or GitHub Secrets (`GH_TOKEN`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`)
 
-### 3. Select Output Folder
-- Choose a local folder where the files will be downloaded, organized by `teamName`.
+---
 
-### 4. Start Download
-- Click "Start" to begin the download process. Progress and logs will be shown in real-time.
+## 🧪 Scripts
+
+| Script                  | Purpose                                    |
+|-------------------------|--------------------------------------------|
+| `npm run dev`           | Run Next.js development server             |
+| `npm run electron:dev`  | Run Electron + Next.js in dev              |
+| `npm run build`         | Build Next.js app                          |
+| `npm run electron:build`| Build Electron production app              |
+
+---
+
+## 🔄 CI/CD (GitHub Actions)
+
+Builds and publishes installers on push to `main`.
+
+- ✅ Uses `electron-builder` with `publish: github`
+- 🔐 Requires GitHub secrets:
+  - `GOOGLE_CLIENT_ID`
+  - `GOOGLE_CLIENT_SECRET`
+  - `GH_TOKEN` (for uploading to GitHub Releases)
+
+### 📁 GitHub Actions file
+
+Located at: `.github/workflows/build.yml`
 
 ---
 
@@ -81,68 +126,32 @@ npm run electron:build
 
 ```
 arunstha21-pf-downloader/
-├── electron/             # Electron main/preload files
-├── lib/                  # Logic for Google API, file handling, logging
-├── src/
-│   ├── app/              # Next.js app router pages and layout
-│   ├── components/       # UI components (ShadCN-based)
-│   └── lib/              # Utility functions
-├── public/               # Static assets
-├── package.json          # Project metadata and scripts
-├── next.config.ts        # Next.js config
-└── tsconfig.*.json       # TypeScript configurations
+├── electron/             # Electron main/preload logic
+├── lib/                  # OAuth, CSV parsing, Drive logic
+├── src/                  # Next.js frontend (ShadCN UI)
+├── public/               # Icons/assets
+├── build/                # Exported Next.js app
+├── dist-electron/        # Electron build output
+├── .github/workflows/    # CI/CD pipeline
 ```
-
----
-
-## 🧪 Scripts
-
-| Command                 | Description                                   |
-|------------------------|-----------------------------------------------|
-| `npm run dev`          | Run Next.js in development mode               |
-| `npm run build`        | Build Next.js for production                  |
-| `npm run start`        | Start Next.js server                          |
-| `npm run lint`         | Run ESLint                                    |
-| `npm run electron:dev` | Run Electron app with Next.js in dev          |
-| `npm run electron:build` | Build the app for production (cross-platform) |
-
----
-
-## ⚙️ Configuration
-
-### Google API
-You must set up OAuth credentials in your Google Developer Console and enable the **Google Drive API**.
-
-Update your `google-auth.ts` with your `CLIENT_ID`, `CLIENT_SECRET`, and scopes.
-
----
-
-## 🛡 Permissions
-
-The app requests the following Google Drive scopes:
-
-```plaintext
-https://www.googleapis.com/auth/drive.readonly
-```
-
-Ensure you authorize this during sign-in for the app to fetch file content.
 
 ---
 
 ## 📌 Known Limitations
 
-- Currently assumes CSV input is well-formed
-- Folder structure is strictly based on `teamName`
-- No drag-and-drop for file upload (planned)
+- Only supports specific CSV columns: `TeamName`, `ID_Proof`, `Bank_details`, `Invoice`
+- No support for drag-and-drop (planned)
+- No retry on failed downloads yet
 
 ---
 
 ## 🧭 Roadmap
 
 - [ ] Drag-and-drop CSV upload
-- [ ] Google Drive folder picker
-- [ ] Export logs as CSV or TXT
 - [ ] Retry failed downloads
+- [ ] Status badges and logs export
+- [ ] Team-wise analytics and dashboard
+- [ ] Electron auto-updates
 
 ---
 
@@ -150,9 +159,16 @@ Ensure you authorize this during sign-in for the app to fetch file content.
 
 **Arun Shrestha**  
 📍 Kathmandu, Nepal  
-🌐 [LinkedIn](https://www.linkedin.com/in/rangotengo)  
+🔗 [LinkedIn](https://www.linkedin.com/in/rangotengo)  
 💻 [GitHub](https://github.com/Arunstha21)
 
+---
+
+## 📄 License
+
+MIT License
+
+---
 
 ## 🙌 Acknowledgments
 

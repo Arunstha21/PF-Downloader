@@ -1,7 +1,7 @@
 {
   "name": "pf-downloader",
   "version": "1.0.0",
-  "description": "An app to download Google Drive files by ID into team folders",
+  "description": "An app to download Google Drive files by ID into team folders and upload them to a Google Drive folder.",
   "scripts": {
     "dev": "next dev",
     "next:build": "next build",
@@ -14,7 +14,7 @@
   },
   "main": "dist-electron/electron/main.mjs",
   "build": {
-    "appId": "com.dot.googledrive-downloader",
+    "appId": "com.dot.pf-downloader",
     "productName": "PF Downloader",
     "files": [
       "dist-electron/**/*",

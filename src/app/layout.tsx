@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GD File Downloader",
-  description: "Google Drive File Downloader",
+  title: "Payment File Downloader",
+  description: "An app to download Google Drive files by ID into team folders and upload them to a Google Drive folder.",
 };
 
 export default function RootLayout({
