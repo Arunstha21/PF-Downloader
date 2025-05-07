@@ -4,11 +4,11 @@
   "description": "An app to download Google Drive files by ID into team folders",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "next:build": "next build",
     "start": "next start",
     "lint": "next lint",
     "electron:dev": "concurrently \"npm run dev\" \"tsc -p tsconfig.electron.json && electron dist-electron/electron/main.mjs\"",
-    "electron:build": "tsc -p tsconfig.electron.json && next build && electron-builder",
+    "electron:build": "tsc -p tsconfig.electron.json && electron-builder",
     "electron:start": "tsc -p tsconfig.electron.json && electron dist-electron/electron/main.mjs"
   },
   "main": "dist-electron/electron/main.mjs",

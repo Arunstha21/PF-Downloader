@@ -6,7 +6,7 @@ import { app } from 'electron';
 import { OAuth2Client } from 'google-auth-library';
 import http from 'http';
 import { URL } from 'url';
-import * as dotenv from 'dotenv';
+import dotenv from 'dotenv';
 import { logger } from './logger';
 dotenv.config();
 

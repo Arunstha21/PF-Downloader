@@ -63,6 +63,9 @@ jobs:
         run: |
           echo "GH_TOKEN=${{ secrets.GH_TOKEN }}" >> $env:GITHUB_ENV
 
+      - name: Build Nextjs
+        run: npm run next:build
+
       - name: Build Electron app (Windows)
         run: npm run electron:build
 
