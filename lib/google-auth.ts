@@ -7,11 +7,16 @@ import { OAuth2Client } from 'google-auth-library';
 import http from 'http';
 import { URL } from 'url';
 import * as dotenv from 'dotenv';
+import { logger } from './logger';
 dotenv.config();
 
 // OAuth 2.0 client ID information
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+
+logger.info('Google Client ID:', CLIENT_ID);
+logger.info('Google Client Secret:', CLIENT_SECRET);
+
 const REDIRECT_URI = 'http://localhost:3001/oauth2callback';
 const SCOPES = [
   'https://www.googleapis.com/auth/userinfo.profile',
