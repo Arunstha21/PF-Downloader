@@ -6,7 +6,6 @@ import { app } from 'electron';
 import { OAuth2Client } from 'google-auth-library';
 import http from 'http';
 import { URL } from 'url';
-import { logger } from './logger';
 
 // OAuth 2.0 client ID information
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
