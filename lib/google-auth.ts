@@ -6,13 +6,13 @@ import { app } from 'electron';
 import { OAuth2Client } from 'google-auth-library';
 import http from 'http';
 import { URL } from 'url';
-import dotenv from 'dotenv';
 import { logger } from './logger';
-dotenv.config();
+
+const env = JSON.parse(fs.readFileSync('dist-electron/env.json', 'utf-8'));
 
 // OAuth 2.0 client ID information
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
-const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+const CLIENT_ID = env.GOOGLE_CLIENT_ID || '';
+const CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET || '';
 
 logger.info('Google Client ID:', CLIENT_ID);
 logger.info('Google Client Secret:', CLIENT_SECRET);

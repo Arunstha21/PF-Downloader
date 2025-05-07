@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "electron:dev": "concurrently \"npm run dev\" \"tsc -p tsconfig.electron.json && electron dist-electron/electron/main.mjs\"",
+    "electron:prepack": "node lib/write-env.js",
     "electron:build": "tsc -p tsconfig.electron.json && electron-builder",
     "electron:start": "tsc -p tsconfig.electron.json && electron dist-electron/electron/main.mjs"
   },
