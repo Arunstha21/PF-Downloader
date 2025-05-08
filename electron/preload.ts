@@ -12,12 +12,12 @@ contextBridge.exposeInMainWorld("electron", {
   clearLogs: () => ipcRenderer.invoke("clear-logs"),
   getDownloadPath: () => ipcRenderer.invoke("get-settings").then((s: any) => s.downloadPath),
   uploadPathToDrive: (path: string) => ipcRenderer.invoke("upload-path-to-drive", path),
+  getDriveFolderInfo: () => ipcRenderer.invoke("get-drive-folder-info"),
+  openExternal: (url: string) => ipcRenderer.invoke("open-external", url),
 
   on: (channel: string, listener: (event: any, ...args: any[]) => void) => {
     ipcRenderer.on(channel, listener)
   },
-
-  // optional: to remove listeners if needed
   off: (channel: string, listener: (...args: any[]) => void) => {
     ipcRenderer.removeListener(channel, listener)
   },

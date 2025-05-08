@@ -20,6 +20,8 @@ interface ElectronAPI {
   off: (channel: string, listener: (...args: any[]) => void) => void;
 
   uploadPathToDrive: (path: string) => Promise<any>;
+  getDriveFolderInfo: () => Promise<any>;
+  openExternal: (url: string) => Promise<any>;
 }
 
 declare global {

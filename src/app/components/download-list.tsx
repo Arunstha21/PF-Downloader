@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { FolderInfo } from "../page"
+import { UploadConfirmationDialog } from "./upload-confirmation-dialogue"
 
 interface DownloadFile {
   id: string
@@ -24,11 +26,18 @@ interface DownloadFolder {
   files: DownloadFile[]
 }
 
-export default function DownloadList({setError, setOverallProgress}: {setError: (error: string | null) => void , setOverallProgress: (percent: number) => void}) {
+export default function DownloadList({setError, setOverallProgress, folderInfo, getFolderInfo}: {setError: (error: string | null) => void , setOverallProgress: (percent: number | null) => void , folderInfo: FolderInfo | null, getFolderInfo: () => void}) {
   const [downloads, setDownloads] = useState<DownloadFolder[]>([])
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [filePath, setFilePath] = useState<string | null>(null)
+
+  const handleUploadClick = (path: string) => {
+    setFilePath(path)
+    setDialogOpen(true)
+  }
 
   const toggleFolder = (folderId: string) => {
     setExpandedFolders((prev) => ({
@@ -108,11 +117,17 @@ export default function DownloadList({setError, setOverallProgress}: {setError: 
     fetchDownloads()
   }, [])
 
-  const handleUpload = async (path: string) => {
+  const handleUpload = async () => {
     setError(null)
-    setOverallProgress(0)
+    setDialogOpen(false)
+    getFolderInfo();
     try {
-      const result = await window.electron?.uploadPathToDrive(path)
+      if (!filePath) {
+        setError("File path is not set")
+        return
+      }
+      setOverallProgress(0)
+      const result = await window.electron?.uploadPathToDrive(filePath)
       if (result && result.success) {
         console.log("Upload successful")
       } else {
@@ -121,10 +136,16 @@ export default function DownloadList({setError, setOverallProgress}: {setError: 
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : "Failed to upload")
+      setOverallProgress(null)
       console.error("Failed to upload folder:", error)
+    } finally{
+      setFilePath(null)
     }
   }
   
+  const handleCancel = ()=>{
+    setDialogOpen(false)
+  }
 
   if (isLoading) {
     return (
@@ -184,7 +205,7 @@ export default function DownloadList({setError, setOverallProgress}: {setError: 
                 {folder.files.filter((f) => f.status === "completed").length > 0 && (
                   <Button variant="outline" size="sm" className="ml-2" onClick={(e) => {
                     e.stopPropagation();
-                    handleUpload(folder.path);
+                    handleUploadClick(folder.path);
                   }}>
                    Upload
                   </Button>
@@ -235,7 +256,7 @@ export default function DownloadList({setError, setOverallProgress}: {setError: 
                         {file.status === "completed" ? (
                           <div className="flex items-center space-x-2">
                           <Check className="h-4 w-4 text-green-500" />
-                          <Button variant="outline" size="sm" className="ml-2" onClick={() => handleUpload(file.path)}>
+                          <Button variant="outline" size="sm" className="ml-2" onClick={() => handleUploadClick(file.path)}>
                           Upload
                          </Button>
                          </div>
@@ -253,6 +274,14 @@ export default function DownloadList({setError, setOverallProgress}: {setError: 
           ))}
         </div>
       </ScrollArea>
+
+      <UploadConfirmationDialog
+        folderInfo={folderInfo}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onConfirm={handleUpload}
+        onCancel={handleCancel}
+      />
     </div>
   )
 }

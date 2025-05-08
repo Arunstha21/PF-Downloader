@@ -18,7 +18,7 @@ interface Settings {
   uploadLink: string
 }
 
-export default function SettingsForm() {
+export default function SettingsForm({getFolderInfo}: {getFolderInfo: () => void}) {
   const [settings, setSettings] = useState<Settings>({
     downloadPath: "",
     autoDeleteZip: true,
@@ -62,6 +62,7 @@ export default function SettingsForm() {
 
     try {
       await window.electron?.saveSettings(settings)
+      getFolderInfo()
       setIsSaved(true)
       setTimeout(() => setIsSaved(false), 3000)
     } catch (err) {

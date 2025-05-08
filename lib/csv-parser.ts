@@ -84,17 +84,9 @@ export function validateCSVData(data: CSVRow[]): { valid: boolean; errors: strin
     if (!row.TeamName) {
       errors.push(`Row ${rowNum}: Missing TeamName`)
     }
-
-    if (!row.ID_Proof) {
-      errors.push(`Row ${rowNum}: Missing ID_Proof`)
-    }
-
-    if (!row.Bank_details) {
-      errors.push(`Row ${rowNum}: Missing Bank_details`)
-    }
-
-    if (!row.Invoice) {
-      errors.push(`Row ${rowNum}: Missing Invoice`)
+    
+    if (!row.ID_Proof && !row.Bank_details && !row.Invoice) {
+      errors.push(`Row ${rowNum}: All file links are missing for ${row.TeamName}`)
     }
   })
 

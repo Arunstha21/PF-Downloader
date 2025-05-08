@@ -1,5 +1,5 @@
 import '../lib/load-env.js'
-import { app, BrowserWindow, ipcMain, dialog, IpcMainInvokeEvent } from "electron";
+import { app, BrowserWindow, ipcMain, dialog, IpcMainInvokeEvent, shell } from "electron";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import fs from "fs-extra";
@@ -406,3 +406,16 @@ ipcMain.handle("get-drive-folder-info", async (_event) => {
     };
   }
 });
+
+ipcMain.handle("open-external", async (_, url) => {
+  try {
+    const urlObj = new URL(url)
+    if (urlObj.protocol === "http:" || urlObj.protocol === "https:") {
+      await shell.openExternal(url)
+    } else {
+      console.error("Invalid URL protocol")
+    }
+  } catch (error) {
+    console.error("Invalid URL:", error)
+  }
+})

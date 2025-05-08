@@ -12,6 +12,13 @@ import LogViewer from "./components/log-viewer"
 import SettingsForm from "./components/settings-form"
 import { parseCSV, validateCSVData, convertCSVToDownloadTasks } from "../../lib/csv-parser"
 import GoogleSignIn from "./components/google-signin"
+import { UploadConfirmationDialog } from "./components/upload-confirmation-dialogue"
+
+export interface FolderInfo {
+  id: string
+  name: string
+  url: string
+}
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("download")
@@ -24,6 +31,12 @@ export default function Home() {
   const [downloadPath, setDownloadPath] = useState<string>('')
   const [isUploading, setIsUploading] = useState(false)
   const [overallProgress, setOverallProgress] = useState<number | null>(null)
+  const [folderInfo, setFolderInfo] = useState<FolderInfo>({
+    id: "",
+    name: "",
+    url: "",
+  })
+  const [dialogOpen, setDialogOpen] = useState(false)
 
     useEffect(() => {
       const loadSettings = async () => {
@@ -36,10 +49,41 @@ export default function Home() {
           setError("Failed to load settings")
           console.error(err)
         }
+        try {
+          const folderInfo = await window.electron?.getDriveFolderInfo();
+          if (folderInfo) {
+            setFolderInfo({
+              id: folderInfo.folderInfo.id,
+              name: folderInfo.folderInfo.name,
+              url: folderInfo.folderInfo.url,
+            });
+          }
+        } catch (error) {
+          setFolderInfo({ id: "", name: "", url: "" });
+          console.error("Error loading folder info:", error);
+        }
       }
   
       loadSettings()
     }, [])
+
+    async function getFolderInfo() {
+      try {
+        const folderInfo = await window.electron?.getDriveFolderInfo();
+        if (folderInfo) {
+          setFolderInfo({
+            id: folderInfo.folderInfo.id,
+            name: folderInfo.folderInfo.name,
+            url: folderInfo.folderInfo.url,
+          });
+        }
+        console.log("Folder Info:", folderInfo);
+      } catch (error) {
+        setFolderInfo({ id: "", name: "", url: "" });
+        setError("Failed to load folder info");
+        console.error("Error loading folder info:", error);
+      }
+    }
 
   useEffect(() => {
     // Check if user is already signed in
@@ -136,8 +180,14 @@ export default function Home() {
   }
 
   const handleUploadAll = async () => {
+    console.log("Uploading all files...");
+    
+    // if(!folderInfo){
+    //   await getFolderInfo()
+    // }
     setError(null)
     setIsUploading(true)
+    setDialogOpen(false)
     setOverallProgress(0)
     const result = await window.electron?.uploadPathToDrive(downloadPath)
     if (result && result.success) {
@@ -148,6 +198,11 @@ export default function Home() {
       setError(result.error)
     }
   }
+
+  const handleCancel = () => {
+    setDialogOpen(false)
+  }
+
 
   if (!isSignedIn) {
     return (
@@ -222,7 +277,7 @@ export default function Home() {
                     <AlertTitle className="text-black">Success</AlertTitle>
                     <AlertDescription>{successMessage}</AlertDescription>
                   </Alert>
-                  <DownloadList setError={setError} setOverallProgress={setOverallProgress}/>
+                  <DownloadList setError={setError} setOverallProgress={setOverallProgress} folderInfo={folderInfo} getFolderInfo={getFolderInfo}/>
                 </div>
               )}
             </TabsContent>
@@ -232,7 +287,7 @@ export default function Home() {
             </TabsContent>
 
             <TabsContent value="settings">
-              <SettingsForm />
+              <SettingsForm getFolderInfo={getFolderInfo}/>
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -240,12 +295,20 @@ export default function Home() {
           <p className="text-xs text-muted-foreground">Google Drive File Downloader v1.0.0</p>
           {successMessage && 
           <div className="flex space-x-2">
-          <Button onClick={handleUploadAll} disabled={isUploading}>{isUploading? "Uploading...":'Upload All Files'}</Button>
+          <Button onClick={()=>{setDialogOpen(true)}} disabled={isUploading}>{isUploading? "Uploading...":'Upload All Files'}</Button>
           <Button onClick={handleDownloadZip}>Download All Files</Button>
           </div>
           }
         </CardFooter>
       </Card>
+
+      <UploadConfirmationDialog
+        folderInfo={folderInfo}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onConfirm={handleUploadAll}
+        onCancel={handleCancel}
+      />
     </main>
   )
 }
